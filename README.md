@@ -34,17 +34,17 @@ wget https://github.com/xixi-zhao/debian-cloud-build/releases/download/latest/de
 ## 💻 导入到 Proxmox VE | Import into Proxmox VE
 
 ```bash
-# 1. 创建 VM（虚拟机）
+# 1. 创建 VM 基础配置
 qm create 9000 --name debian-13-template --memory 1024 --net0 virtio,bridge=vmbr0 \
-  --scsihw virtio-scsi-pci --boot order=scsi0 \
-  --ide2 local-lvm:cloudinit --serial0 socket --vga serial0 --agent enabled=1
+  --scsihw virtio-scsi-pci --serial0 socket --vga serial0 --agent enabled=1
 
-# 2. 导入磁盘（请确保文件名正确）
-qm importdisk 9000 debian-13-custom.qcow2 local-lvm --format qcow2
+# 2. 导入并挂载磁盘
+# 注意：import-from 后面必须是文件的绝对路径
+qm set 9000 --scsi0 local-lvm:0,import-from=$(pwd)/debian-13-custom.qcow2
 
-# 3. 挂载磁盘并设置为启动盘
-qm set 9000 --scsi0 local-lvm:vm-9000-disk-0
-qm set 9000 --boot c --bootdisk scsi0
+# 3. 添加 Cloud-Init 驱动器并设置引导顺序
+qm set 9000 --ide2 local-lvm:cloudinit
+qm set 9000 --boot order=scsi0
 
 # 4. 转为模板
 qm template 9000
