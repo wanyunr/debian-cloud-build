@@ -15,7 +15,7 @@ jobs:
       - run:
           name: 下载 Debian Cloud Image
           command: |
-            axel -n 8 -o debian-12.qcow2 https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+            axel -n 8 -o debian-13.qcow2 https://cdimage.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2
 
       - run:
           name: 解锁内核（仅限 CI 使用）
@@ -25,7 +25,7 @@ jobs:
       - run:
           name: 定制镜像
           command: |
-            virt-customize -a debian-12.qcow2 \
+            virt-customize -a debian-13.qcow2 \
               --smp 2 \
               --timezone Asia/Hong_Kong \
               --append-line "/etc/default/grub:# disables OS prober to avoid loopback detection which breaks booting" \
@@ -46,12 +46,12 @@ jobs:
       - run:
           name: 压缩镜像
           command: |
-            virt-sparsify --compress debian-12.qcow2 debian-12-custom.qcow2
+            virt-sparsify --compress debian-13.qcow2 debian-13-custom.qcow2
 
       - persist_to_workspace:
           root: .
           paths:
-            - debian-12-custom.qcow2
+            - debian-13-custom.qcow2
 
   upload-to-release:
     machine: true
@@ -79,7 +79,7 @@ jobs:
             TAG_NAME="${CIRCLE_TAG:-manual-$(date +%s)}"
             echo "上传到 Release: $TAG_NAME"
 
-            ls -lh debian-12-custom.qcow2 || (echo "镜像文件不存在" && exit 1)
+            ls -lh debian-13-custom.qcow2 || (echo "镜像文件不存在" && exit 1)
 
             # 如果 Release 不存在，则创建
             if ! gh release view "$TAG_NAME" > /dev/null 2>&1; then
@@ -89,15 +89,11 @@ jobs:
             fi
 
             # 上传镜像文件
-            gh release upload "$TAG_NAME" debian-12-custom.qcow2 --clobber
+            gh release upload "$TAG_NAME" debian-13-custom.qcow2 --clobber
       - run:
           name: 同步镜像到 latest Release
           command: |
-            gh release upload latest debian-12-custom.qcow2 --clobber || echo "latest 不存在，跳过上传"
-
-
-
-
+            gh release upload latest debian-13-custom.qcow2 --clobber || echo "latest 不存在，跳过上传"
 
 workflows:
   build_and_release:
