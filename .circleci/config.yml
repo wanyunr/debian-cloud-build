@@ -18,6 +18,18 @@ jobs:
             axel -n 8 -o debian-13.qcow2 https://cdimage.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2
 
       - run:
+          name: 下载额外工具 (duf, tcping)
+          command: |
+            mkdir -p tools
+            curl -fL -o tools/duf_0.9.1_linux_amd64.deb \
+              https://github.com/muesli/duf/releases/download/v0.9.1/duf_0.9.1_linux_amd64.deb
+            curl -fL -o tools/tcping-linux-amd64-static.tar.gz \
+              https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-amd64-static.tar.gz
+            tar -xzf tools/tcping-linux-amd64-static.tar.gz -C tools
+            chmod +x tools/tcping
+            ls -lh tools
+
+      - run:
           name: 解锁内核（仅限 CI 使用）
           command: |
             sudo dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-$(uname -r)
@@ -32,8 +44,18 @@ jobs:
               --append-line "/etc/default/grub:GRUB_DISABLE_OS_PROBER=true" \
               --run-command "update-grub" \
               --run-command "systemctl enable serial-getty@ttyS1.service" \
-              --run-command "sed -i 's|Types: deb deb-src|Types: deb|g' /etc/apt/sources.list.d/debian.sources" \
+              --run-command "systemctl enable qemu-guest-agent.service" \
+              --run-command "sed -i -E 's|Types: deb deb-src|Types: deb|g; s|https?://deb\.debian\.org|https://mirrors.ustc.edu.cn|g' /etc/apt/sources.list.d/debian.sources" \
               --run-command "sed -i 's|generate_mirrorlists: true|generate_mirrorlists: false|g' /etc/cloud/cloud.cfg.d/01_debian_cloud.cfg" \
+              --append-line "/etc/ssh/sshd_config.d/01-root-login.conf:PermitRootLogin yes" \
+              --append-line "/etc/ssh/sshd_config.d/01-root-login.conf:PasswordAuthentication yes" \
+              --append-line "/etc/cloud/cloud.cfg.d/99-enable-root.cfg:disable_root: false" \
+              --append-line "/etc/cloud/cloud.cfg.d/99-enable-root.cfg:ssh_pwauth: true" \
+              --upload tools/duf_0.9.1_linux_amd64.deb:/tmp/duf_0.9.1_linux_amd64.deb \
+              --upload tools/tcping:/tmp/tcping \
+              --run-command "dpkg -i /tmp/duf_0.9.1_linux_amd64.deb" \
+              --run-command "install -m 0755 /tmp/tcping /usr/local/bin/tcping" \
+              --run-command "rm -f /tmp/duf_0.9.1_linux_amd64.deb /tmp/tcping" \
               --update \
               --install "sudo,qemu-guest-agent,spice-vdagent,bash-completion,unzip,wget,curl,axel,net-tools,iputils-ping,iputils-arping,iputils-tracepath,nano,most,screen,less,vim,bzip2,lldpd,mtr-tiny,htop,dnsutils,zstd" \
               --run-command "apt-get -y autoremove --purge && apt-get -y clean" \
