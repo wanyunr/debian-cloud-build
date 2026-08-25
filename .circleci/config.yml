@@ -98,6 +98,7 @@ jobs:
           name: 上传到 GitHub Release（最终版）
           command: |
             export GITHUB_TOKEN=$GH_TOKEN
+            export GH_REPO=wanyunr/debian-cloud-build
             TAG_NAME="${CIRCLE_TAG:-manual-$(date +%s)}"
             echo "上传到 Release: $TAG_NAME"
 
@@ -115,6 +116,8 @@ jobs:
       - run:
           name: 同步镜像到 latest Release
           command: |
+            export GITHUB_TOKEN=$GH_TOKEN
+            export GH_REPO=wanyunr/debian-cloud-build
             gh release upload latest debian-13-custom.qcow2 --clobber || echo "latest 不存在，跳过上传"
 
 workflows:
