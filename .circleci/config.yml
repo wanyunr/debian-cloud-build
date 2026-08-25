@@ -44,7 +44,6 @@ jobs:
               --append-line "/etc/default/grub:GRUB_DISABLE_OS_PROBER=true" \
               --run-command "update-grub" \
               --run-command "systemctl enable serial-getty@ttyS1.service" \
-              --run-command "systemctl enable qemu-guest-agent.service" \
               --run-command "sed -i -E 's|Types: deb deb-src|Types: deb|g; s|https?://deb\.debian\.org|https://mirrors.ustc.edu.cn|g' /etc/apt/sources.list.d/debian.sources" \
               --run-command "sed -i 's|generate_mirrorlists: true|generate_mirrorlists: false|g' /etc/cloud/cloud.cfg.d/01_debian_cloud.cfg" \
               --append-line "/etc/ssh/sshd_config.d/01-root-login.conf:PermitRootLogin yes" \
@@ -59,6 +58,7 @@ jobs:
               --update \
               --install "sudo,qemu-guest-agent,spice-vdagent,bash-completion,unzip,wget,curl,axel,net-tools,iputils-ping,iputils-arping,iputils-tracepath,nano,most,screen,less,vim,bzip2,lldpd,mtr-tiny,htop,dnsutils,zstd" \
               --run-command "apt-get -y autoremove --purge && apt-get -y clean" \
+              --firstboot-command "systemctl enable --now qemu-guest-agent.service" \
               --append-line "/etc/systemd/timesyncd.conf:NTP=time.apple.com time.windows.com" \
               --delete "/var/log/*.log" \
               --delete "/var/lib/apt/lists/*" \
